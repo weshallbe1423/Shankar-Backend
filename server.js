@@ -24,11 +24,16 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: [
+    'https://shankar-baba-frontend.vercel.app', // Production frontend
+    'http://localhost:3000',                    // Local dev
+    'http://127.0.0.1:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // Other middleware
 app.use(compression());
