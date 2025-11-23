@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": 1763836341619,
+      "email": "vish.nikalje@gmail.com",
+      "mobile": "9860024017",
+      "password": "$2b$10$d11aw5jZtAVeVu1ni.OtEePmiRBMZpB.N8OtqFvbk23lZDAbQG.bm",
+      "emailVerified": false,
+      "mobileVerified": false,
+      "createdAt": "2025-11-22T18:32:21.619Z",
+      "lastLogin": null,
+      "otp": {
+        "emailOtp": "440273",
+        "mobileOtp": "288580",
+        "emailOtpExpiry": "2025-11-22T18:42:21.634Z",
+        "mobileOtpExpiry": "2025-11-22T18:42:21.666Z"
+      }
+    }
+  ]
+}
