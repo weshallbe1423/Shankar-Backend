@@ -75,7 +75,7 @@ router.post('/analyze', async (req, res) => {
       'SHRN': './inputData/SHRN.html',
       'RJD': './inputData/RJD.html',
       'RJN': './inputData/RJN.html',
-      'MADHURI NIGHT': './inputData/MDHN.html',
+      'MADHURI NIGHT': './inputData/MDHN.html'
     };
 
     const relativePath = matkaFiles[matkaId];
@@ -253,7 +253,13 @@ router.post('/batch-analyze', async (req, res) => {
           'TB': './inputData/TB.html',
           'MLD': './inputData/MLD.html',
           'MLN': './inputData/MLN.html',
-          'MAIN': './inputData/MAIN.html'
+          'MAIN': './inputData/MAIN.html',
+          'MADHURI': './inputData/MADHURI.html',
+          'PUNA': './inputData/PUNA.html',
+          'SHRN': './inputData/SHRN.html',
+          'RJD': './inputData/RJD.html',
+          'RJN': './inputData/RJN.html',
+          'MADHURI NIGHT': './inputData/MDHN.html'
         };
 
         const relativePath = matkaFiles[matkaId];
@@ -330,12 +336,18 @@ router.post('/append-raw-data', async (req, res) => {
     }
 
     const matkaFiles = {
-      'KL': './inputData/KL.html',
+       'KL': './inputData/KL.html',
       'SHRD': './inputData/SHRD.html',
       'TB': './inputData/TB.html',
       'MLD': './inputData/MLD.html',
       'MLN': './inputData/MLN.html',
-      'MAIN': './inputData/MAIN.html'
+      'MAIN': './inputData/MAIN.html',
+      'MADHURI': './inputData/MADHURI.html',
+      'PUNA': './inputData/PUNA.html',
+      'SHRN': './inputData/SHRN.html',
+      'RJD': './inputData/RJD.html',
+      'RJN': './inputData/RJN.html',
+      'MADHURI NIGHT': './inputData/MDHN.html'
     };
 
     const relativePath = matkaFiles[matkaId];
@@ -399,7 +411,13 @@ router.get('/file-info/:matkaId', async (req, res) => {
       'TB': './inputData/TB.html',
       'MLD': './inputData/MLD.html',
       'MLN': './inputData/MLN.html',
-      'MAIN': './inputData/MAIN.html'
+      'MAIN': './inputData/MAIN.html',
+      'MADHURI': './inputData/MADHURI.html',
+      'PUNA': './inputData/PUNA.html',
+      'SHRN': './inputData/SHRN.html',
+      'RJD': './inputData/RJD.html',
+      'RJN': './inputData/RJN.html',
+      'MADHURI NIGHT': './inputData/MDHN.html'
     };
 
     const relativePath = matkaFiles[matkaId];
