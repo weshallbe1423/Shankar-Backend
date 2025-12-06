@@ -5,8 +5,9 @@ const {
   getPattiFamily,
   getTopPattisFromFamily,
   getTopIndexes,
-  isRecent,
-  calculateJodiSum
+  calculateMirrorJodi,
+  calculateJodiSum,
+  displayPrecise4JodiPredictions
 } = require('../utils/helpers');
 const { PATTI_FAMILIES, JODI_FAMILIES } = require('../config/constants');
 
@@ -258,17 +259,203 @@ const combinePattiPredictions = (panelOpenPattis, panelClosePattis, data) => {
   };
 };
 
+const generatePrecise4JodiPredictions = (data, daysLimit = 60) => {
+  if (!data || data.length === 0) {
+    return {
+      final4Jodis: ['13', '31', '68', '86'],
+      detailedPredictions: {},
+      analysisDate: new Date().toLocaleDateString()
+    };
+  }
+
+  const recentData = data.slice(-Math.min(data.length, daysLimit));
+  const predictions = {
+    matrixMethod: [],
+    patternMethod: [],
+    gapMethod: [],
+    familyMethod: [],
+    mirrorMethod: [],
+    combined: []
+  };
+
+  // -----------------------------
+  // 1) MATRIX TRANSITION
+  // -----------------------------
+  const transitionMatrix = new Map();
+  for (let i = 1; i < recentData.length; i++) {
+    const from = recentData[i - 1].jodi;
+    const to = recentData[i].jodi;
+
+    if (!transitionMatrix.has(from)) {
+      transitionMatrix.set(from, new Map());
+    }
+    const map = transitionMatrix.get(from);
+    map.set(to, (map.get(to) || 0) + 1);
+  }
+
+  const lastJodis = recentData.slice(-3).map(d => d.jodi);
+
+  lastJodis.forEach(jodi => {
+    if (transitionMatrix.has(jodi)) {
+      const map = transitionMatrix.get(jodi);
+      const total = [...map.values()].reduce((a, b) => a + b, 0);
+      if (total > 0) {
+        [...map.entries()]
+          .map(([to, count]) => ({
+            jodi: to,
+            score: Math.round((count / total) * 100),
+            reason: `Transition: ${jodi} → ${to}`
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 2)
+          .forEach(x => predictions.matrixMethod.push(x));
+      }
+    }
+  });
+
+  // -----------------------------
+  // 2) PATTERN METHOD (NO RANDOM)
+  // -----------------------------
+  const recentDigits = recentData.slice(-12)
+    .map(d => d.jodi.split(""))
+    .flat();
+
+  const digitFrequency = Array(10).fill(0);
+  recentDigits.forEach(d => digitFrequency[Number(d)]++);
+
+  const hotDigits = digitFrequency
+    .map((count, digit) => ({ digit, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map(x => x.digit);
+
+  for (let a of hotDigits) {
+    for (let b of hotDigits) {
+      if (a !== b) {
+        predictions.patternMethod.push({
+          jodi: `${a}${b}`,
+          score: 60,
+          reason: `Hot digits ${a}+${b}`
+        });
+      }
+    }
+  }
+
+  // -----------------------------
+  // 3) GAP METHOD
+  // -----------------------------
+  const lastSeen = {};
+  recentData.forEach((d, i) => (lastSeen[d.jodi] = i));
+
+  const totalEntries = recentData.length;
+
+  Object.entries(lastSeen).forEach(([jodi, lastIndex]) => {
+    const daysSince = totalEntries - lastIndex - 1;
+    if (daysSince >= 7 && daysSince <= 30) {
+      const occurrences = recentData.filter(x => x.jodi === jodi).length;
+      const avgGap = totalEntries / (occurrences + 1);
+
+      if (daysSince >= avgGap * 0.7) {
+        predictions.gapMethod.push({
+          jodi,
+          score: Math.round((daysSince / avgGap) * 70),
+          reason: `Due after ${daysSince} days (avg gap ${Math.round(avgGap)})`
+        });
+      }
+    }
+  });
+
+  // -----------------------------
+  // 4) MIRROR & REVERSE
+  // -----------------------------
+  const lastJodi = recentData[recentData.length - 1].jodi;
+
+  const mirror = calculateMirrorJodi(lastJodi);
+  predictions.mirrorMethod.push({
+    jodi: mirror,
+    score: 65,
+    reason: `Mirror of ${lastJodi}`
+  });
+
+  const reverse = lastJodi.split("").reverse().join("");
+  if (reverse !== lastJodi) {
+    predictions.mirrorMethod.push({
+      jodi: reverse,
+      score: 60,
+      reason: `Reverse of ${lastJodi}`
+    });
+  }
+
+  // -----------------------------
+  // COMBINE ALL
+  // -----------------------------
+  const combinedMap = new Map();
+
+  const pushToMap = (arr, method) => {
+    arr.forEach(x => {
+      if (!combinedMap.has(x.jodi)) {
+        combinedMap.set(x.jodi, {
+          jodi: x.jodi,
+          totalScore: 0,
+          topReason: x.reason,
+          methods: []
+        });
+      }
+      const obj = combinedMap.get(x.jodi);
+      obj.totalScore += x.score;
+      obj.methods.push(method);
+    });
+  };
+
+  pushToMap(predictions.matrixMethod, "matrix");
+  pushToMap(predictions.patternMethod, "pattern");
+  pushToMap(predictions.gapMethod, "gap");
+  pushToMap(predictions.mirrorMethod, "mirror");
+
+  const ranked = [...combinedMap.values()].sort((a, b) => {
+    if (b.methods.length !== a.methods.length)
+      return b.methods.length - a.methods.length;
+    return b.totalScore - a.totalScore;
+  });
+
+  // -----------------------------
+  // FINAL 4 JODIS (STRICT)
+  // -----------------------------
+  const final = [];
+  const last5 = new Set(recentData.slice(-5).map(d => d.jodi));
+
+  for (let r of ranked) {
+    if (final.length === 4) break;
+    if (!last5.has(r.jodi)) final.push(r.jodi);
+  }
+
+  // fallback
+  while (final.length < 4) {
+    final.push("00");
+  }
+
+  return {
+    final4Jodis: final.slice(0, 4),
+    detailedPredictions: ranked,
+    analysisDate: new Date().toLocaleDateString()
+  };
+};
+
 // Generate family and jodi-based guesses
 const generateGuesses = (analysis, daysLimit) => {
+  let FINAL_FOUR_JODI;
   const { digitFrequency, openSumFrequency, closeSumFrequency, pattiFrequencyMap, data } = analysis;
 
+  const precise4JodiPredictions = generatePrecise4JodiPredictions(data, Math.min(daysLimit || 60, 90));
   // Get frequent digits
   const frequentDigits = digitFrequency
     .map((count, digit) => ({ digit, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5)
     .map(item => item.digit);
-
+if (precise4JodiPredictions) {
+      FINAL_FOUR_JODI=displayPrecise4JodiPredictions(precise4JodiPredictions);
+    }
   const topOpenSums = getTopIndexes(openSumFrequency, 3);
   const topCloseSums = getTopIndexes(closeSumFrequency, 3);
   
@@ -318,6 +505,7 @@ const generateGuesses = (analysis, daysLimit) => {
     topOpenFamilies, 
     topCloseFamilies, 
     top5Guesses,
+    precise4JodiPredictions.final4Jodis,
     topJodis,
     data,
     daysLimit
@@ -333,7 +521,9 @@ const generateGuesses = (analysis, daysLimit) => {
     jodiAnalysis: jodiPredictions.detailedAnalysis,
     combinedPredictions,
     top5Guesses,
-    jackpotPredictions
+    jackpotPredictions,
+    precise4JodiPredictions,
+    FINAL_FOUR_JODI
   };
 };
 

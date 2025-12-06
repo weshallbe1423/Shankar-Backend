@@ -155,6 +155,58 @@ const calculateProbabilityDistribution = (data) => {
   return distributions;
 };
 
+const displayPrecise4JodiPredictions = (predictions) => {
+  if (!predictions || !predictions.final4Jodis) return;
+  
+  const { final4Jodis, detailedPredictions } = predictions;
+  
+  console.log('\n✨' + '='.repeat(70));
+  console.log('✨ FINAL 4-JODI PREDICTIONS');
+  console.log('✨' + '='.repeat(70));
+  
+  console.log(`\n🎯 TOP 4 RECOMMENDED JODIS:`);
+  console.log('   ' + '─'.repeat(60));
+  
+  final4Jodis.forEach((jodi, index) => {
+    const family = calculateJodiSum(jodi);
+    const mirror = calculateMirrorJodi(jodi);
+    const reverse = jodi.split('').reverse().join('');
+    
+    const predDetails = detailedPredictions.combined?.find(p => p.jodi === jodi);
+    
+    console.log(`\n   ${index + 1}. ${jodi.padEnd(5)}`);
+    console.log(`      ├── Family: Sum ${family}`);
+    console.log(`      ├── Mirror: ${mirror} | Reverse: ${reverse}`);
+    
+    if (predDetails) {
+      console.log(`      ├── Confidence: ${predDetails.methodCount} methods`);
+      console.log(`      ├── Total Score: ${predDetails.totalScore}`);
+      if (predDetails.reasons && predDetails.reasons.length > 0) {
+        console.log(`      └── Top Reason: ${predDetails.reasons[0]}`);
+      }
+    }
+    console.log('   ' + '─'.repeat(60));
+  });
+  
+  console.log('\n🔍 PREDICTION METHOD CONTRIBUTION:');
+  const methods = ['matrixMethod', 'patternMethod', 'gapMethod', 'familyMethod', 'mirrorMethod'];
+  methods.forEach(method => {
+    const preds = detailedPredictions[method];
+    if (preds && preds.length > 0) {
+      const contributingJodis = preds
+        .filter(p => final4Jodis.includes(p.jodi))
+        .map(p => p.jodi);
+      if (contributingJodis.length > 0) {
+        console.log(`   ${method.replace('Method', '')}: ${contributingJodis.join(', ')}`);
+      }
+    }
+  });
+  
+  console.log('\n📈 STRATEGY: Play all 4 jodis for maximum coverage');
+  console.log('✨' + '='.repeat(70));
+};
+
+
 module.exports = {
   calculateJodiSum,
   getJodiFamily,
@@ -166,5 +218,6 @@ module.exports = {
   getTopIndexes,
   getTopPattisFromFamily,
   isRecent,
-  calculateProbabilityDistribution
+  calculateProbabilityDistribution,
+  displayPrecise4JodiPredictions
 };
